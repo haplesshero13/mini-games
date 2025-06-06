@@ -42,14 +42,19 @@ export const WordUp: React.FC<WordUpProps> = ({
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
+  // only for gacha
   const [ownedLetters, setOwnedLetters] = useState<string[]>([]);
   const [pulls, setPulls] = useState(0);
   const [gachaPulling, setGachaPulling] = useState(false);
+  const [justPulledLetters, setJustPulledLetters] = useState<string[]>([]);
+  const [pullAnimationLetters, setPullAnimationLetters] = useState<string[]>(
+    [],
+  );
+  const [pullAnimationIndex, setPullAnimationIndex] = useState<number>(-1);
 
   const handleInput = (event: React.ChangeEvent<HTMLInputElement>) => {
     let value = event.target.value.toLowerCase();
     if (gacha) {
-      // Filter out letters not owned
       value = value
         .split("")
         .filter((l) => ownedLetters.includes(l.toUpperCase()))
@@ -101,28 +106,46 @@ export const WordUp: React.FC<WordUpProps> = ({
     }
   };
 
+  const animatePulledLetters = async (letters: string[]) => {
+    setPullAnimationLetters(letters);
+    setPullAnimationIndex(0);
+    for (let i = 1; i <= letters.length; ++i) {
+      setPullAnimationIndex(i);
+
+      await new Promise((resolve) => setTimeout(resolve, 500));
+    }
+    setPullAnimationLetters([]);
+    setPullAnimationIndex(-1);
+  };
+
   const handleSinglePull = async () => {
     setGachaPulling(true);
-    await new Promise((resolve) => setTimeout(resolve, 5000));
+    await new Promise((resolve) => setTimeout(resolve, 500));
     const letter = singlePull();
     setOwnedLetters((prev) =>
-      prev.includes(letter) ? prev : [...prev, letter],
+      prev.includes(letter) ? prev : [...prev, letter].sort(),
     );
     setPulls((p) => p + 1);
+    await animatePulledLetters([letter]);
+    setJustPulledLetters([letter]);
     setGachaPulling(false);
+    setTimeout(() => setJustPulledLetters([]), 1000);
   };
 
   const handleTenPull = async () => {
     setGachaPulling(true);
-    await new Promise((resolve) => setTimeout(resolve, 5000));
+    await new Promise((resolve) => setTimeout(resolve, 500));
     const newLetters = gachafyMeCapn(10);
     setOwnedLetters((prev) => {
       const set = new Set(prev);
       newLetters.forEach((l) => set.add(l));
-      return Array.from(set);
+      return Array.from(set).sort();
     });
     setPulls((p) => p + 10);
+    await animatePulledLetters(newLetters);
+    setJustPulledLetters(newLetters);
     setGachaPulling(false);
+    setTimeout(() => setJustPulledLetters([]), 1000);
   };
 
   return (
@@ -148,16 +171,47 @@ export const WordUp: React.FC<WordUpProps> = ({
               Ten Pull
             </button>
           </div>
-          {
-            <div className="text-lg text-purple-700 font-bold mb-2 animate-pulse">
-              {gachaPulling
-                ? "Pulling... Insert flashy animation here... Sorry, budget was low."
-                : "Nothing says innovative, modern game design like adding a gacha element!"}
-            </div>
-          }
+          <div className="text-lg text-purple-700 font-bold mb-2 min-h-[2.5rem] flex items-center justify-center">
+            {gachaPulling && pullAnimationLetters.length > 0 ? (
+              pullAnimationLetters.slice(0, pullAnimationIndex).map((l, i) => (
+                <span
+                  key={l + i}
+                  className="inline-block mx-1 animate-pop-in text-purple-600 text-2xl font-mono"
+                  style={{
+                    animation: "pop-in 0.5s",
+                  }}
+                >
+                  {l}
+                </span>
+              ))
+            ) : gachaPulling ? (
+              <span className="animate-pulse">Pulling...</span>
+            ) : (
+              <span>
+                Nothing says innovative, modern game design like adding a gacha
+                element!
+              </span>
+            )}
+          </div>
           Owned Letters:
-          <div className="text-sm text-gray-700 transition-all">
-            {ownedLetters.length > 0 ? ownedLetters.join(" ") : "(none)"}
+          <div className="text-sm text-gray-700">
+            {ownedLetters.length > 0
+              ? ownedLetters.map((l) => (
+                  <span
+                    key={l}
+                    className={`inline-block mx-0.5 font-mono ${
+                      justPulledLetters.includes(l)
+                        ? "animate-pop-in text-purple-600 scale-125"
+                        : ""
+                    }`}
+                    style={{
+                      transition: "transform 0.3s, color 0.3s",
+                    }}
+                  >
+                    {l}
+                  </span>
+                ))
+              : "(none)"}
           </div>
         </div>
       )}
@@ -239,7 +293,7 @@ export const WordUp: React.FC<WordUpProps> = ({
             key={i}
             guesses={guesses}
             answer={answer}
-            ownedLetters={gacha ? ownedLetters.sort() : undefined}
+            ownedLetters={gacha ? ownedLetters : undefined}
           />
         ))}
       </div>
@@ -292,8 +346,7 @@ const KeyboardRow = ({
         return (
           <span
             key={key}
-            className={`w-8 h-10 flex items-center justify-center rounded text-lg font-bold uppercase text-white ${color} select-none ${notOwned ? "line-through opacity-40" : ""}`}
-            style={notOwned ? { textDecoration: "line-through" } : {}}
+            className={`w-8 h-10 flex items-center justify-center rounded text-lg font-bold uppercase text-white ${color} select-none ${notOwned ? "line-through bg-red-300 opacity-40" : ""}`}
           >
             {key}
           </span>
