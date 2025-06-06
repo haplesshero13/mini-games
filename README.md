@@ -1,7 +1,7 @@
 # Mini Games
 
 ## WordUp
-A clone of a popular guessing game for words of a certain length. Extended to provide an extra challenge for those willing to accep it.
+A clone of a popular guessing game for words of a certain length. Extended to provide an extra challenge for those willing to accept it.
 
 ## Template
 
