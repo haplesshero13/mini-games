@@ -152,7 +152,7 @@ export const WordUp: React.FC<WordUpProps> = ({
             <div className="text-lg text-purple-700 font-bold mb-2 animate-pulse">
               {gachaPulling
                 ? "Pulling... Insert flashy animation here... Sorry, budget was low."
-                : "Nothing says innovating modern game design like adding a gacha element!"}
+                : "Nothing says innovative, modern game design like adding a gacha element!"}
             </div>
           }
           Owned Letters:
