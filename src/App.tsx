@@ -25,7 +25,7 @@ export const App: React.FC = () => {
           </button>
         ))}
       </div>
-      <WordUp size={size} maxGuesses={6} />
+      <WordUp key={size} size={size} maxGuesses={6} />
     </div>
   );
 };

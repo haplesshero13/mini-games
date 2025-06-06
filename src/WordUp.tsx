@@ -4,6 +4,31 @@ import type { WordleSizes } from "./wordUpRules";
 
 type WordUpProps = { size: number; maxGuesses: number };
 
+const QWERTY_ROWS = [
+  "QWERTYUIOP".split(""),
+  "ASDFGHJKL".split(""),
+  "ZXCVBNM".split(""),
+];
+
+const getLetterStatuses = (guesses: string[], answer: string) => {
+  const status: Record<string, "correct" | "present" | "absent" | undefined> =
+    {};
+  for (const guess of guesses) {
+    const result = guessResults(guess, answer);
+    for (let i = 0; i < guess.length; ++i) {
+      const l = guess[i].toUpperCase();
+      if (result[i] === "correct") {
+        status[l] = "correct";
+      } else if (result[i] === "present" && status[l] !== "correct") {
+        status[l] = "present";
+      } else if (!status[l]) {
+        status[l] = "absent";
+      }
+    }
+  }
+  return status;
+};
+
 export const WordUp: React.FC<WordUpProps> = ({ size, maxGuesses }) => {
   const [answer] = useState(randomAnswer(size.toString() as WordleSizes));
   const [guesses, setGuesses] = useState<string[]>([]);
@@ -16,6 +41,8 @@ export const WordUp: React.FC<WordUpProps> = ({ size, maxGuesses }) => {
     setInput(event.target.value.toLowerCase());
     setError(null);
   };
+
+  const letterStatuses = getLetterStatuses(guesses, answer);
 
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
@@ -114,6 +141,31 @@ export const WordUp: React.FC<WordUpProps> = ({ size, maxGuesses }) => {
           Game over! The word was <span className="uppercase">{answer}</span>
         </div>
       )}
+      <div className="my-4">
+        {QWERTY_ROWS.map((row, i) => (
+          <div className="flex justify-center gap-1 mb-1" key={i}>
+            {row.map((key) => {
+              const status = letterStatuses[key];
+              const color =
+                status === "correct"
+                  ? "bg-green-600"
+                  : status === "present"
+                    ? "bg-yellow-500"
+                    : status === "absent"
+                      ? "bg-gray-400"
+                      : "bg-gray-200";
+              return (
+                <span
+                  key={key}
+                  className={`w-8 h-10 flex items-center justify-center rounded text-lg font-bold uppercase text-white ${color} select-none`}
+                >
+                  {key}
+                </span>
+              );
+            })}
+          </div>
+        ))}
+      </div>
     </div>
   );
 };
