@@ -35,8 +35,8 @@ const tiers = {
 
 /*
   Chances of pulling each tier:
-    common: 50%
-    uncommon: 40%
+    common: 40%
+    uncommon: 50%
     rare: 8%
     legendary: 2%
   Within each tier, the chances are evenly distributed.
@@ -44,7 +44,7 @@ const tiers = {
 export const singlePull = (): string => {
   const rarity = Math.random();
   const tier =
-        rarity < 0.5
+        rarity < 0.4
           ? "common"
           : rarity < 0.9
             ? "uncommon"
@@ -57,4 +57,16 @@ export const singlePull = (): string => {
 
 export const gachafyMeCapn = (pulls: number): string[] => {
   return Array.from({ length: pulls }).map(singlePull);
+};
+
+export const beginnerTenPull = (): string[] => {
+  const vowels = ["A", "E", "I", "O", "U"];
+  const pulls = gachafyMeCapn(9);
+  const hasVowel = pulls.some((char) => vowels.includes(char));
+  if (hasVowel) {
+    pulls.push(singlePull());
+  } else {
+    pulls.push(vowels[Math.floor(Math.random() * vowels.length)]);
+  }
+  return pulls;
 };

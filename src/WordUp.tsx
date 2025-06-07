@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { randomAnswer, isValidWord, guessResults } from "./wordUpRules";
 import type { WordleSizes } from "./wordUpRules";
-import { singlePull, gachafyMeCapn } from "./gachafy"; // <-- Import gacha
+import { singlePull, gachafyMeCapn, beginnerTenPull } from "./gachafy";
 
 type WordUpProps = { size: number; maxGuesses: number; gacha?: boolean };
 
@@ -13,7 +13,7 @@ const QWERTY_ROWS = [
 
 const getLetterStatuses = (guesses: string[], answer: string) => {
   const status: Record<string, "correct" | "present" | "absent" | undefined> =
-    {};
+        {};
   for (const guess of guesses) {
     const result = guessResults(guess, answer);
     for (let i = 0; i < guess.length; ++i) {
@@ -51,6 +51,7 @@ export const WordUp: React.FC<WordUpProps> = ({
     [],
   );
   const [pullAnimationIndex, setPullAnimationIndex] = useState<number>(-1);
+  const [beginnerTenPullUsed, setBeginnerTenPullUsed] = useState(false);
 
   const handleInput = (event: React.ChangeEvent<HTMLInputElement>) => {
     let value = event.target.value.toLowerCase();
@@ -148,6 +149,23 @@ export const WordUp: React.FC<WordUpProps> = ({
     setTimeout(() => setJustPulledLetters([]), 1000);
   };
 
+  const handleBeginnerTenPull = async () => {
+    setGachaPulling(true);
+    await new Promise((resolve) => setTimeout(resolve, 500));
+    const newLetters = beginnerTenPull();
+    setOwnedLetters((prev) => {
+      const set = new Set(prev);
+      newLetters.forEach((l) => set.add(l));
+      return Array.from(set).sort();
+    });
+    setPulls((p) => p + 10);
+    await animatePulledLetters(newLetters);
+    setJustPulledLetters(newLetters);
+    setGachaPulling(false);
+    setTimeout(() => setJustPulledLetters([]), 1000);
+    setBeginnerTenPullUsed(true);
+  };
+
   return (
     <div className="max-w-md mx-auto bg-zinc-100 text-black rounded-lg p-6 shadow-lg m-6">
       <h2 className="text-3xl font-bold mb-4">WordUp</h2>
@@ -170,26 +188,41 @@ export const WordUp: React.FC<WordUpProps> = ({
             >
               Ten Pull
             </button>
+            <button
+              className="bg-blue-500 px-3 py-1 rounded text-white font-bold cursor-pointer disabled:bg-zinc-200 disabled:cursor-not-allowed relative"
+              onClick={handleBeginnerTenPull}
+              disabled={
+                status !== "playing" ||
+                                gachaPulling ||
+                                beginnerTenPullUsed
+              }
+              type="button"
+              title="Can only be used once! Guarantees a vowel among the first ten pulls."
+            >
+              Beginner Ten Pull
+            </button>
           </div>
           <div className="text-lg text-purple-700 font-bold mb-2 min-h-[2.5rem] flex items-center justify-center">
             {gachaPulling && pullAnimationLetters.length > 0 ? (
-              pullAnimationLetters.slice(0, pullAnimationIndex).map((l, i) => (
-                <span
-                  key={l + i}
-                  className="inline-block mx-1 animate-pop-in text-purple-600 text-2xl font-mono"
-                  style={{
-                    animation: "pop-in 0.5s",
-                  }}
-                >
-                  {l}
-                </span>
-              ))
+              pullAnimationLetters
+                .slice(0, pullAnimationIndex)
+                .map((l, i) => (
+                  <span
+                    key={l + i}
+                    className="inline-block mx-1 animate-pop-in text-purple-600 text-2xl font-mono"
+                    style={{
+                      animation: "pop-in 0.5s",
+                    }}
+                  >
+                    {l}
+                  </span>
+                ))
             ) : gachaPulling ? (
               <span className="animate-pulse">Pulling...</span>
             ) : (
               <span>
-                Nothing says innovative, modern game design like adding a gacha
-                element!
+                Nothing says innovative, modern game design like
+                adding a gacha element!
               </span>
             )}
           </div>
@@ -197,20 +230,21 @@ export const WordUp: React.FC<WordUpProps> = ({
           <div className="text-sm text-gray-700">
             {ownedLetters.length > 0
               ? ownedLetters.map((l) => (
-                  <span
-                    key={l}
-                    className={`inline-block mx-0.5 font-mono ${
-                      justPulledLetters.includes(l)
-                        ? "animate-pop-in text-purple-600 scale-125"
-                        : ""
-                    }`}
-                    style={{
-                      transition: "transform 0.3s, color 0.3s",
-                    }}
-                  >
-                    {l}
-                  </span>
-                ))
+                <span
+                  key={l}
+                  className={`inline-block mx-0.5 font-mono ${
+                    justPulledLetters.includes(l)
+                      ? "animate-pop-in text-purple-600 scale-125"
+                      : ""
+                  }`}
+                  style={{
+                    transition:
+                                              "transform 0.3s, color 0.3s",
+                  }}
+                >
+                  {l}
+                </span>
+              ))
               : "(none)"}
           </div>
         </div>
@@ -220,39 +254,55 @@ export const WordUp: React.FC<WordUpProps> = ({
           const guess = guesses[guessIndex] || "";
           const result = guess ? guessResults(guess, answer) : [];
           return (
-            <div className="flex gap-2 justify-center" key={guessIndex}>
-              {Array.from({ length: size }).map((_, letterIndex) => {
-                const letter = guess[letterIndex] || "";
-                const color =
-                  result[letterIndex] === "correct"
-                    ? "bg-green-600"
-                    : result[letterIndex] === "present"
-                      ? "bg-yellow-500"
-                      : guess[letterIndex]
-                        ? "bg-gray-400"
-                        : "bg-gray-200";
-                return LetterBlock(letterIndex, color, letter);
-              })}
+            <div
+              className="flex gap-2 justify-center"
+              key={guessIndex}
+            >
+              {Array.from({ length: size }).map(
+                (_, letterIndex) => {
+                  const letter = guess[letterIndex] || "";
+                  const color =
+                                        result[letterIndex] === "correct"
+                                          ? "bg-green-600"
+                                          : result[letterIndex] === "present"
+                                            ? "bg-yellow-500"
+                                            : guess[letterIndex]
+                                              ? "bg-gray-400"
+                                              : "bg-gray-200";
+                  return LetterBlock(
+                    letterIndex,
+                    color,
+                    letter,
+                  );
+                },
+              )}
             </div>
           );
         })}
       </div>
       {status === "playing" && (
-        <form onSubmit={handleSubmit} className="flex gap-2 justify-center">
+        <form
+          onSubmit={handleSubmit}
+          className="flex gap-2 justify-center"
+        >
           <input
             type="text"
             maxLength={size}
             value={input}
             onChange={handleInput}
             className="w-32 p-2 rounded bg-white text-black text-xl text-center"
-            disabled={status !== "playing" || loading || gachaPulling}
+            disabled={
+              status !== "playing" || loading || gachaPulling
+            }
             pattern={`[a-zA-Z]{${size}}`}
             autoFocus
           />
           <button
             type="submit"
             className="bg-blue-600 px-4 py-2 rounded text-white font-bold cursor-pointer"
-            disabled={input.length !== size || loading || gachaPulling}
+            disabled={
+              input.length !== size || loading || gachaPulling
+            }
           >
             {loading ? "Checking..." : "Guess"}
           </button>
@@ -266,15 +316,17 @@ export const WordUp: React.FC<WordUpProps> = ({
           </div>
           {gacha && (
             <div>
-              If you assumed each pull cost $2.09, you would owe me USD
+              If you assumed each pull cost $2.09, you would owe
+              me USD
               {Intl.NumberFormat("en-US", {
                 style: "currency",
                 currency: "USD",
               }).format(pulls * 2.09)}
-              , but of course, this is a free game lol. And no self-respecting
-              gacha game would ever tell you that up front; you'd just have to
-              guess all of that after your bank settles your accounts or
-              whatever. Anyway, I hoped you kept track of your pulls and "spent"
+              , but of course, this is a free game lol. And no
+              self-respecting gacha game would ever tell you that
+              up front; you'd just have to guess all of that after
+              your bank settles your accounts or whatever. Anyway,
+              I hoped you kept track of your pulls and "spent"
               responsibly!
             </div>
           )}
@@ -301,13 +353,14 @@ export const WordUp: React.FC<WordUpProps> = ({
         <div className="text-sm text-zinc-300">
           Pull rates and disclosures:
           <ul>
-            <li>common: Q, J, Z, X</li>
-            <li>uncommon: V, K, W, Y</li>
-            <li>rare: F, B, G, H, M, P, D, U, C</li>
-            <li>legendary: L, S, N, T, O, I, R, A, E</li>
+            <li>useless: Q, J, Z, X</li>
+            <li>unlikely: V, K, W, Y</li>
+            <li>good: F, B, G, H, M, P, D, U, C</li>
+            <li>top-tier: L, S, N, T, O, I, R, A, E</li>
           </ul>
-          Chances of pulling each tier: common: 50% uncommon: 40% rare: 8%
-          legendary: 2%. Within each tier, the chances are evenly distributed.
+          Chances of pulling each tier: useless: 40%, unlikely: 50%,
+          good: 8%, top-tier: 2%. Within each tier, the chances are
+          evenly distributed.
         </div>
       )}
     </div>
@@ -335,13 +388,13 @@ const KeyboardRow = ({
       {row.map((key) => {
         const status = letterStatuses[key];
         const color =
-          status === "correct"
-            ? "bg-green-600"
-            : status === "present"
-              ? "bg-yellow-500"
-              : status === "absent"
-                ? "bg-gray-400"
-                : "bg-gray-200";
+                    status === "correct"
+                      ? "bg-green-600"
+                      : status === "present"
+                        ? "bg-yellow-500"
+                        : status === "absent"
+                          ? "bg-gray-400"
+                          : "bg-gray-200";
         const notOwned = ownedLetters && !ownedLetters.includes(key);
         return (
           <span
