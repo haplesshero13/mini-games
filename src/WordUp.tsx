@@ -299,7 +299,7 @@ export const WordUp: React.FC<WordUpProps> = ({
           />
           <button
             type="submit"
-            className="bg-blue-600 px-4 py-2 rounded text-white font-bold cursor-pointer"
+            className="bg-blue-600 px-4 py-2 rounded text-white font-bold cursor-pointer disabled:bg-gray-200 disabled:text-gray-400 disabled:cursor-disabled"
             disabled={
               input.length !== size || loading || gachaPulling
             }
