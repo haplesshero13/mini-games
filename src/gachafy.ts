@@ -27,17 +27,17 @@ A – 8.4966%
 E – 11.1607%
 */
 const tiers = {
-  common: ["Q", "J", "Z", "X"],
-  uncommon: ["V", "K", "W", "Y"],
-  rare: ["F", "B", "G", "H", "M", "P", "D", "U", "C"],
-  legendary: ["L", "S", "N", "T", "O", "I", "R", "A", "E"],
+  useless: ["Q", "J", "Z", "X", "V"],
+  uncommon: ["K", "W", "Y", "F", "B", "G", "H"],
+  epic: ["M", "P", "D", "U", "C", "L", "S", "N"],
+  legendary: ["T", "O", "I", "R", "A", "E"],
 };
 
 /*
   Chances of pulling each tier:
-    common: 40%
+    useless: 40%
     uncommon: 50%
-    rare: 8%
+    epic: 8%
     legendary: 2%
   Within each tier, the chances are evenly distributed.
 */
@@ -45,11 +45,11 @@ export const singlePull = (): string => {
   const rarity = Math.random();
   const tier =
         rarity < 0.4
-          ? "common"
+          ? "useless"
           : rarity < 0.9
             ? "uncommon"
             : rarity < 0.98
-              ? "rare"
+              ? "epic"
               : "legendary";
   const index = Math.floor(Math.random() * tiers[tier].length);
   return tiers[tier][index];

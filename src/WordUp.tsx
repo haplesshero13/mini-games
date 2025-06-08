@@ -353,13 +353,13 @@ export const WordUp: React.FC<WordUpProps> = ({
         <div className="text-sm text-zinc-300">
           Pull rates and disclosures:
           <ul>
-            <li>useless: Q, J, Z, X</li>
-            <li>unlikely: V, K, W, Y</li>
-            <li>good: F, B, G, H, M, P, D, U, C</li>
-            <li>top-tier: L, S, N, T, O, I, R, A, E</li>
+            <li>useless: Q, J, Z, X, V</li>
+            <li>uncommon:K, W, Y, F, B, G, H</li>
+            <li>epic: M, P, D, U, C, L, S, N </li>
+            <li>legendary: T, O, I, R, A, E</li>
           </ul>
-          Chances of pulling each tier: useless: 40%, unlikely: 50%,
-          good: 8%, top-tier: 2%. Within each tier, the chances are
+          Chances of pulling each tier: useless: 40%, uncommon: 50%,
+          epic: 8%, legendary: 2%. Within each tier, the chances are
           evenly distributed.
         </div>
       )}
