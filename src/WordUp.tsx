@@ -53,18 +53,6 @@ export const WordUp: React.FC<WordUpProps> = ({
   const [pullAnimationIndex, setPullAnimationIndex] = useState<number>(-1);
   const [beginnerTenPullUsed, setBeginnerTenPullUsed] = useState(false);
 
-  // --- Helper Functions for Input/Guess Logic ---
-  const filterInput = (value: string, ownedLetters?: string[]) => {
-    let filtered = value.replace(/[^a-zA-Z]/g, "").toLowerCase();
-    if (gacha && ownedLetters) {
-      filtered = filtered
-        .split("")
-        .filter((l) => ownedLetters.includes(l.toUpperCase()))
-        .join("");
-    }
-    return filtered;
-  };
-
   const canUseLetter = (letter: string) => {
     if (!gacha) return true;
     return ownedLetters.includes(letter.toUpperCase());
