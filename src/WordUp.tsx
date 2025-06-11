@@ -53,20 +53,42 @@ export const WordUp: React.FC<WordUpProps> = ({
   const [pullAnimationIndex, setPullAnimationIndex] = useState<number>(-1);
   const [beginnerTenPullUsed, setBeginnerTenPullUsed] = useState(false);
 
-  const handleInput = (event: React.ChangeEvent<HTMLInputElement>) => {
-    let value = event.target.value.toLowerCase();
-    if (gacha) {
-      value = value
+  // --- Helper Functions for Input/Guess Logic ---
+  const filterInput = (value: string, ownedLetters?: string[]) => {
+    let filtered = value.replace(/[^a-zA-Z]/g, "").toLowerCase();
+    if (gacha && ownedLetters) {
+      filtered = filtered
         .split("")
         .filter((l) => ownedLetters.includes(l.toUpperCase()))
         .join("");
     }
-    setInput(value);
+    return filtered;
+  };
+
+  const canUseLetter = (letter: string) => {
+    if (!gacha) return true;
+    return ownedLetters.includes(letter.toUpperCase());
+  };
+
+  const handleInputLetter = (letter: string) => {
+    if (status !== "playing" || loading || gachaPulling || input.length >= size)
+      return;
+    if (!/^[a-zA-Z]$/.test(letter)) return;
+    if (!canUseLetter(letter)) return;
+    setInput((prev) =>
+      prev.length < size ? prev + letter.toLowerCase() : prev,
+    );
     setError(null);
   };
 
-  const handleSubmit = async (event: React.FormEvent) => {
-    event.preventDefault();
+  const handleBackspace = () => {
+    if (status !== "playing" || loading || gachaPulling) return;
+    setInput((prev) => prev.slice(0, -1));
+    setError(null);
+  };
+
+  const handleEnter = async () => {
+    if (status !== "playing" || loading || gachaPulling) return;
     if (input.length !== size) {
       setError(`Word must be ${size} letters.`);
       return;
@@ -106,6 +128,33 @@ export const WordUp: React.FC<WordUpProps> = ({
       setStatus("lost");
     }
   };
+
+  // --- Keyboard Event Handling ---
+  React.useEffect(() => {
+    if (status !== "playing" || loading || gachaPulling) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.ctrlKey || e.metaKey || e.altKey) return;
+      if (
+        document.activeElement &&
+        (document.activeElement as HTMLElement).tagName === "INPUT"
+      )
+        return;
+      if (status !== "playing" || loading || gachaPulling) return;
+      if (e.key === "Backspace" || e.key === "Delete") {
+        e.preventDefault();
+        handleBackspace();
+      } else if (e.key === "Enter") {
+        e.preventDefault();
+        handleEnter();
+      } else if (/^[a-zA-Z]$/.test(e.key)) {
+        e.preventDefault();
+        handleInputLetter(e.key);
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+    // eslint-disable-next-line
+  }, [input, status, loading, gachaPulling, ownedLetters, size, gacha]);
 
   const animatePulledLetters = async (letters: string[]) => {
     setPullAnimationLetters(letters);
@@ -284,25 +333,12 @@ export const WordUp: React.FC<WordUpProps> = ({
         })}
       </div>
       {status === "playing" && (
-        <form onSubmit={handleSubmit} className="flex gap-2 justify-center">
-          <input
-            type="text"
-            maxLength={size}
-            value={input}
-            onChange={handleInput}
-            className="w-32 p-2 rounded bg-white text-black text-xl text-center"
-            disabled={status !== "playing" || loading || gachaPulling}
-            pattern={`[a-zA-Z]{${size}}`}
-            autoFocus
-          />
-          <button
-            type="submit"
-            className="bg-blue-600 px-4 py-2 rounded text-white font-bold cursor-pointer disabled:bg-gray-200 disabled:text-gray-400 disabled:cursor-disabled"
-            disabled={input.length !== size || loading || gachaPulling}
-          >
-            {loading ? "Checking..." : "Guess"}
-          </button>
-        </form>
+        <div className="flex gap-2 justify-center mb-2">
+          {Array.from({ length: size }).map((_, i) => {
+            const letter = input[i] || "";
+            return LetterBlock(i, "bg-gray-200", letter);
+          })}
+        </div>
       )}
       {error && <div className="mt-2 text-red-400">{error}</div>}
       {status === "won" && (
@@ -338,8 +374,43 @@ export const WordUp: React.FC<WordUpProps> = ({
             guesses={guesses}
             answer={answer}
             ownedLetters={gacha ? ownedLetters : undefined}
+            onKeyPress={handleInputLetter}
+            input={input}
+            size={size}
+            gacha={gacha}
+            canUseLetter={canUseLetter}
           />
         ))}
+        <div className="flex justify-center gap-1 mt-2">
+          <button
+            className="w-16 h-10 rounded bg-gray-300 text-black font-bold text-lg mr-2"
+            type="button"
+            onClick={handleBackspace}
+            disabled={
+              status !== "playing" ||
+              loading ||
+              gachaPulling ||
+              input.length === 0
+            }
+            aria-label="Backspace"
+          >
+            ⌫
+          </button>
+          <button
+            className="w-24 h-10 rounded bg-blue-600 text-white font-bold text-lg"
+            type="button"
+            onClick={handleEnter}
+            disabled={
+              status !== "playing" ||
+              loading ||
+              gachaPulling ||
+              input.length !== size
+            }
+            aria-label="Enter"
+          >
+            {loading ? "Checking..." : "Enter"}
+          </button>
+        </div>
       </div>
       {gacha && (
         <div className="text-sm text-zinc-300">
@@ -361,17 +432,27 @@ export const WordUp: React.FC<WordUpProps> = ({
 
 export default WordUp;
 
-// --- KeyboardRow updated for gacha ---
+// --- KeyboardRow updated for gacha and tap/click ---
 const KeyboardRow = ({
   row,
   guesses,
   answer,
   ownedLetters,
+  onKeyPress,
+  input,
+  size,
+  gacha,
+  canUseLetter,
 }: {
   row: string[];
   guesses: string[];
   answer: string;
   ownedLetters?: string[];
+  onKeyPress?: (letter: string) => void;
+  input?: string;
+  size?: number;
+  gacha?: boolean;
+  canUseLetter?: (letter: string) => boolean;
 }) => {
   const letterStatuses = getLetterStatuses(guesses, answer);
 
@@ -388,13 +469,24 @@ const KeyboardRow = ({
                 ? "bg-gray-400"
                 : "bg-gray-200";
         const notOwned = ownedLetters && !ownedLetters.includes(key);
+        const disabled =
+          (gacha && !canUseLetter?.(key)) ||
+          (input != null && size != undefined && input.length >= size);
         return (
-          <span
+          <button
             key={key}
-            className={`w-8 h-10 flex items-center justify-center rounded text-lg font-bold uppercase text-white ${color} select-none ${notOwned ? "line-through bg-red-300 opacity-40" : ""}`}
+            type="button"
+            className={`w-8 h-10 flex items-center justify-center rounded text-lg font-bold uppercase text-white ${color} select-none ${notOwned ? "line-through bg-red-300 opacity-40" : ""} ${disabled ? "opacity-40 cursor-not-allowed" : "cursor-pointer"} transition`}
+            style={{ userSelect: "none" }}
+            onClick={() => {
+              if (!disabled && onKeyPress) onKeyPress(key);
+            }}
+            disabled={disabled}
+            tabIndex={-1}
+            aria-label={key}
           >
             {key}
-          </span>
+          </button>
         );
       })}
     </div>
