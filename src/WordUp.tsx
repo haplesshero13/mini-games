@@ -13,7 +13,7 @@ const QWERTY_ROWS = [
 
 const getLetterStatuses = (guesses: string[], answer: string) => {
   const status: Record<string, "correct" | "present" | "absent" | undefined> =
-        {};
+    {};
   for (const guess of guesses) {
     const result = guessResults(guess, answer);
     for (let i = 0; i < guess.length; ++i) {
@@ -119,55 +119,88 @@ export const WordUp: React.FC<WordUpProps> = ({
     setPullAnimationIndex(-1);
   };
 
-  const handleSinglePull = async () => {
+  const updateOwnedLetters = (prev: string[], newLetters: string[]) => {
+    const set = new Set(prev);
+    newLetters.forEach((l) => set.add(l));
+    return Array.from(set).sort();
+  };
+
+  const handleGachaPull = async (
+    pullFn: () => string | string[],
+    setOwnedLetters: React.Dispatch<React.SetStateAction<string[]>>,
+    setPulls: React.Dispatch<React.SetStateAction<number>>,
+    animatePulledLetters: (letters: string[]) => Promise<void>,
+    setJustPulledLetters: React.Dispatch<React.SetStateAction<string[]>>,
+    setGachaPulling: React.Dispatch<React.SetStateAction<boolean>>,
+    pullsToAdd: number,
+    afterPull?: () => void,
+  ) => {
     setGachaPulling(true);
     await new Promise((resolve) => setTimeout(resolve, 500));
-    const letter = singlePull();
-    setOwnedLetters((prev) =>
-      prev.includes(letter) ? prev : [...prev, letter].sort(),
+    const result = pullFn();
+    const newLetters = Array.isArray(result) ? result : [result];
+    setOwnedLetters((prev) => updateOwnedLetters(prev, newLetters));
+    setPulls((p) => p + pullsToAdd);
+    await animatePulledLetters(newLetters);
+    setJustPulledLetters(newLetters);
+    setGachaPulling(false);
+    setTimeout(() => setJustPulledLetters([]), 1000);
+    if (afterPull) afterPull();
+  };
+
+  const handleSinglePull = () =>
+    handleGachaPull(
+      singlePull,
+      setOwnedLetters,
+      setPulls,
+      animatePulledLetters,
+      setJustPulledLetters,
+      setGachaPulling,
+      1,
     );
-    setPulls((p) => p + 1);
-    await animatePulledLetters([letter]);
-    setJustPulledLetters([letter]);
-    setGachaPulling(false);
-    setTimeout(() => setJustPulledLetters([]), 1000);
-  };
 
-  const handleTenPull = async () => {
-    setGachaPulling(true);
-    await new Promise((resolve) => setTimeout(resolve, 500));
-    const newLetters = gachafyMeCapn(10);
-    setOwnedLetters((prev) => {
-      const set = new Set(prev);
-      newLetters.forEach((l) => set.add(l));
-      return Array.from(set).sort();
-    });
-    setPulls((p) => p + 10);
-    await animatePulledLetters(newLetters);
-    setJustPulledLetters(newLetters);
-    setGachaPulling(false);
-    setTimeout(() => setJustPulledLetters([]), 1000);
-  };
+  const handleTenPull = () =>
+    handleGachaPull(
+      () => gachafyMeCapn(10),
+      setOwnedLetters,
+      setPulls,
+      animatePulledLetters,
+      setJustPulledLetters,
+      setGachaPulling,
+      10,
+    );
 
-  const handleBeginnerTenPull = async () => {
-    setGachaPulling(true);
-    await new Promise((resolve) => setTimeout(resolve, 500));
-    const newLetters = beginnerTenPull();
-    setOwnedLetters((prev) => {
-      const set = new Set(prev);
-      newLetters.forEach((l) => set.add(l));
-      return Array.from(set).sort();
-    });
-    setPulls((p) => p + 10);
-    await animatePulledLetters(newLetters);
-    setJustPulledLetters(newLetters);
-    setGachaPulling(false);
-    setTimeout(() => setJustPulledLetters([]), 1000);
-    setBeginnerTenPullUsed(true);
-  };
+  const handleBeginnerTenPull = () =>
+    handleGachaPull(
+      beginnerTenPull,
+      setOwnedLetters,
+      setPulls,
+      animatePulledLetters,
+      setJustPulledLetters,
+      setGachaPulling,
+      10,
+      () => setBeginnerTenPullUsed(true),
+    );
+
+  const OwnedLetter = ({
+    justPulled,
+    letter,
+  }: {
+    justPulled: boolean;
+    letter: string;
+  }) => (
+    <span
+      className={`inline-block mx-0.5 font-mono ${justPulled ? "animate-pop-in text-purple-600 scale-125" : ""}`}
+      style={{
+        transition: "transform 0.3s, color 0.3s",
+      }}
+    >
+      {letter}
+    </span>
+  );
 
   return (
-    <div className="max-w-md mx-auto bg-zinc-100 text-black rounded-lg p-6 shadow-lg m-6">
+    <div className="w-full max-w-md sm:mx-auto bg-zinc-100 text-black rounded-lg p-2 sm:p-6 shadow-lg m-0 sm:m-6 flex flex-col justify-center">
       <h2 className="text-3xl font-bold mb-4">WordUp</h2>
       {gacha && (
         <div className="mb-4 flex flex-col items-center">
@@ -192,9 +225,7 @@ export const WordUp: React.FC<WordUpProps> = ({
               className="bg-blue-500 px-3 py-1 rounded text-white font-bold cursor-pointer disabled:bg-zinc-200 disabled:cursor-not-allowed relative"
               onClick={handleBeginnerTenPull}
               disabled={
-                status !== "playing" ||
-                                gachaPulling ||
-                                beginnerTenPullUsed
+                status !== "playing" || gachaPulling || beginnerTenPullUsed
               }
               type="button"
               title="Can only be used once! Guarantees a vowel among the first ten pulls."
@@ -204,48 +235,29 @@ export const WordUp: React.FC<WordUpProps> = ({
           </div>
           <div className="text-lg text-purple-700 font-bold mb-2 min-h-[2.5rem] flex items-center justify-center">
             {gachaPulling && pullAnimationLetters.length > 0 ? (
-              pullAnimationLetters
-                .slice(0, pullAnimationIndex)
-                .map((l, i) => (
-                  <span
-                    key={l + i}
-                    className="inline-block mx-1 animate-pop-in text-purple-600 text-2xl font-mono"
-                    style={{
-                      animation: "pop-in 0.5s",
-                    }}
-                  >
-                    {l}
-                  </span>
-                ))
-            ) : gachaPulling ? (
-              <span className="animate-pulse">Pulling...</span>
-            ) : (
-              <span>
-                Nothing says innovative, modern game design like
-                adding a gacha element!
-              </span>
-            )}
-          </div>
-          Owned Letters:
-          <div className="text-sm text-gray-700">
-            {ownedLetters.length > 0
-              ? ownedLetters.map((l) => (
+              pullAnimationLetters.slice(0, pullAnimationIndex).map((l, i) => (
                 <span
-                  key={l}
-                  className={`inline-block mx-0.5 font-mono ${
-                    justPulledLetters.includes(l)
-                      ? "animate-pop-in text-purple-600 scale-125"
-                      : ""
-                  }`}
+                  key={l + i}
+                  className="inline-block mx-1 animate-pop-in text-purple-600 text-2xl font-mono"
                   style={{
-                    transition:
-                                              "transform 0.3s, color 0.3s",
+                    animation: "pop-in 0.5s",
                   }}
                 >
                   {l}
                 </span>
               ))
-              : "(none)"}
+            ) : gachaPulling ? (
+              <span className="animate-pulse">Pulling...</span>
+            ) : (
+              <span>Pull for letters, guess the word!</span>
+            )}
+          </div>
+          Owned Letters:
+          <div className="text-sm text-gray-700">
+            {ownedLetters.map((l) => {
+              const justPulled = justPulledLetters.includes(l);
+              return <OwnedLetter key={l} letter={l} justPulled={justPulled} />;
+            })}
           </div>
         </div>
       )}
@@ -254,55 +266,39 @@ export const WordUp: React.FC<WordUpProps> = ({
           const guess = guesses[guessIndex] || "";
           const result = guess ? guessResults(guess, answer) : [];
           return (
-            <div
-              className="flex gap-2 justify-center"
-              key={guessIndex}
-            >
-              {Array.from({ length: size }).map(
-                (_, letterIndex) => {
-                  const letter = guess[letterIndex] || "";
-                  const color =
-                                        result[letterIndex] === "correct"
-                                          ? "bg-green-600"
-                                          : result[letterIndex] === "present"
-                                            ? "bg-yellow-500"
-                                            : guess[letterIndex]
-                                              ? "bg-gray-400"
-                                              : "bg-gray-200";
-                  return LetterBlock(
-                    letterIndex,
-                    color,
-                    letter,
-                  );
-                },
-              )}
+            <div className="flex gap-2 justify-center" key={guessIndex}>
+              {Array.from({ length: size }).map((_, letterIndex) => {
+                const letter = guess[letterIndex] || "";
+                const color =
+                  result[letterIndex] === "correct"
+                    ? "bg-green-600"
+                    : result[letterIndex] === "present"
+                      ? "bg-yellow-500"
+                      : guess[letterIndex]
+                        ? "bg-gray-400"
+                        : "bg-gray-200";
+                return LetterBlock(letterIndex, color, letter);
+              })}
             </div>
           );
         })}
       </div>
       {status === "playing" && (
-        <form
-          onSubmit={handleSubmit}
-          className="flex gap-2 justify-center"
-        >
+        <form onSubmit={handleSubmit} className="flex gap-2 justify-center">
           <input
             type="text"
             maxLength={size}
             value={input}
             onChange={handleInput}
             className="w-32 p-2 rounded bg-white text-black text-xl text-center"
-            disabled={
-              status !== "playing" || loading || gachaPulling
-            }
+            disabled={status !== "playing" || loading || gachaPulling}
             pattern={`[a-zA-Z]{${size}}`}
             autoFocus
           />
           <button
             type="submit"
             className="bg-blue-600 px-4 py-2 rounded text-white font-bold cursor-pointer disabled:bg-gray-200 disabled:text-gray-400 disabled:cursor-disabled"
-            disabled={
-              input.length !== size || loading || gachaPulling
-            }
+            disabled={input.length !== size || loading || gachaPulling}
           >
             {loading ? "Checking..." : "Guess"}
           </button>
@@ -314,28 +310,24 @@ export const WordUp: React.FC<WordUpProps> = ({
           <div className="mt-4 text-green-400 font-bold text-xl">
             You won! 🎉 Refresh to play again.
           </div>
-          {gacha && (
-            <div>
-              If you assumed each pull cost $2.09, you would owe
-              me USD
-              {Intl.NumberFormat("en-US", {
-                style: "currency",
-                currency: "USD",
-              }).format(pulls * 2.09)}
-              , but of course, this is a free game lol. And no
-              self-respecting gacha game would ever tell you that
-              up front; you'd just have to guess all of that after
-              your bank settles your accounts or whatever. Anyway,
-              I hoped you kept track of your pulls and "spent"
-              responsibly!
-            </div>
-          )}
         </>
       )}
       {status === "lost" && (
         <div className="mt-4 text-red-400 font-bold text-xl">
           Game over! The word was {answer.toUpperCase()}
-          {gacha && <> — Pulls used: {pulls}</>}
+        </div>
+      )}
+      {gacha && status !== "playing" && (
+        <div>
+          If you assumed each pull cost $2.09, you would owe me USD
+          {Intl.NumberFormat("en-US", {
+            style: "currency",
+            currency: "USD",
+          }).format(pulls * 2.09)}
+          , but of course, this is a free game lol. And no self-respecting gacha
+          game would ever tell you that up front; you'd just have to guess all
+          of that after your bank settles your accounts or whatever. Anyway, I
+          hoped you kept track of your pulls and "spent" responsibly!
         </div>
       )}
       <div className="my-4">
@@ -351,16 +343,16 @@ export const WordUp: React.FC<WordUpProps> = ({
       </div>
       {gacha && (
         <div className="text-sm text-zinc-300">
-          Pull rates and disclosures:
+          Nothing says innovative, modern game design like adding a gacha
+          element! Pull rates and disclosures:
           <ul>
             <li>useless: Q, J, Z, X, V</li>
             <li>uncommon:K, W, Y, F, B, G, H</li>
             <li>epic: M, P, D, U, C, L, S, N </li>
             <li>legendary: T, O, I, R, A, E</li>
           </ul>
-          Chances of pulling each tier: useless: 40%, uncommon: 50%,
-          epic: 8%, legendary: 2%. Within each tier, the chances are
-          evenly distributed.
+          Chances of pulling each tier: useless: 40%, uncommon: 50%, epic: 8%,
+          legendary: 2%. Within each tier, the chances are evenly distributed.
         </div>
       )}
     </div>
@@ -388,13 +380,13 @@ const KeyboardRow = ({
       {row.map((key) => {
         const status = letterStatuses[key];
         const color =
-                    status === "correct"
-                      ? "bg-green-600"
-                      : status === "present"
-                        ? "bg-yellow-500"
-                        : status === "absent"
-                          ? "bg-gray-400"
-                          : "bg-gray-200";
+          status === "correct"
+            ? "bg-green-600"
+            : status === "present"
+              ? "bg-yellow-500"
+              : status === "absent"
+                ? "bg-gray-400"
+                : "bg-gray-200";
         const notOwned = ownedLetters && !ownedLetters.includes(key);
         return (
           <span
