@@ -4,6 +4,7 @@
     "JavaScript": {
       "formatter": {
         "code_actions": {
+          "prettier": false,
           "source.fixAll.eslint": true
         }
       }
@@ -11,6 +12,7 @@
     "TypeScript": {
       "formatter": {
         "code_actions": {
+          "prettier": false,
           "source.fixAll.eslint": true
         }
       }

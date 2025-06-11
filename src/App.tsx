@@ -33,7 +33,7 @@ export const App: React.FC = () => {
           </button>
         </div>
         <h1 className="sm:text-3xl font-bold leading-tight text-gray-900">
-          Games
+          Nofair Games
         </h1>
       </header>
       <nav
