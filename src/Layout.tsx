@@ -1,10 +1,8 @@
 import React, { useState } from "react";
-import "./App.css";
-import { WordUp } from "./WordUp";
+import { NavLink } from "react-router-dom";
+import { Outlet } from "react-router-dom";
 
-export const App: React.FC = () => {
-  const [size, setSize] = useState(5);
-  const [gachaMode, setGachaMode] = useState(true);
+export const Layout: React.FC = () => {
   const [navOpen, setNavOpen] = useState(false);
 
   return (
@@ -63,46 +61,34 @@ export const App: React.FC = () => {
       >
         <div className="flex flex-col sm:flex-row gap-2 sm:gap-4 p-4 sm:p-0">
           {[5, 6, 7].map((n) => (
-            <button
+            <NavLink
               key={n}
-              className={`px-4 py-2 rounded font-semibold border ${
-                size === n && !gachaMode
-                  ? "bg-blue-600 text-white border-blue-700"
-                  : "bg-white text-blue-700 border-blue-300"
-              } transition`}
+              className={({ isActive }) =>
+                `px-4 py-2 rounded font-semibold border button ${isActive ? "active disabled" : ""}`
+              }
+              to={`/word-up-${n}`}
               onClick={() => {
-                setSize(n);
-                setGachaMode(false);
                 setNavOpen(false);
               }}
             >
               WordUp {n}-Letter
-            </button>
+            </NavLink>
           ))}
-          <button
-            className={`px-4 py-2 rounded font-semibold border ${
-              size === 5 && gachaMode
-                ? "bg-purple-600 text-white border-purple-700"
-                : "bg-white text-purple-700 border-purple-300"
-            } transition`}
+          <NavLink
+            className={({ isActive }) =>
+              `px-4 py-2 rounded font-semibold border button ${isActive ? "active disabled" : ""}`
+            }
+            to="/word-up-gacha"
             onClick={() => {
-              setSize(5);
-              setGachaMode(true);
               setNavOpen(false);
             }}
-            disabled={size !== 5 && gachaMode === false ? false : size !== 5}
           >
             WordUp With Gacha
-          </button>
+          </NavLink>
         </div>
       </nav>
       <main className="flex-1 flex flex-col items-center justify-center w-full">
-        <WordUp
-          key={size + (gachaMode ? "-gacha" : "")}
-          size={size}
-          maxGuesses={6}
-          gacha={gachaMode}
-        />
+        <Outlet />
       </main>
       <footer className="w-full text-center text-xs text-gray-400 py-2 mt-4">
         <a
@@ -117,5 +103,3 @@ export const App: React.FC = () => {
     </div>
   );
 };
-
-export default App;

@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { randomAnswer, isValidWord, guessResults } from "./wordUpRules";
 import type { WordleSizes } from "./wordUpRules";
 import { singlePull, gachafyMeCapn, beginnerTenPull } from "./gachafy";
+import "./WordUp.css";
 
 type WordUpProps = { size: number; maxGuesses: number; gacha?: boolean };
 
