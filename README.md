@@ -1,5 +1,5 @@
 # Nofair Games
-Mini Games that tickle the humor bone and make you think!
+Mini Games that tickle the humor bone and make you think! Currently hosted at https://nofair.games/
 
 [![ko-fi](https://ko-fi.com/img/githubbutton_sm.svg)](https://ko-fi.com/X8X2PD3JW)
 
