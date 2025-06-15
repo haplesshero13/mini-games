@@ -1,5 +1,6 @@
 import json
 import os
+import argparse
 
 def group_words_by_length(file_path):
     """
@@ -45,26 +46,12 @@ def group_words_by_length(file_path):
         return None
 
 if __name__ == "__main__":
-    # Example usage:
-    # 1. Create a dummy text file for demonstration
-    dummy_file_name = "words.txt"
-    dummy_content = """
-"apple"
-"banana"
-"cat"
-"dog"
-"""
+    parser = argparse.ArgumentParser(description="Group words by length from a text file.")
+    parser.add_argument("file_path", type=str, help="Path to the input text file (one double-quoted word per line)")
+    args = parser.parse_args()
+
     try:
-        with open(dummy_file_name, 'w', encoding='utf-8') as f:
-            f.write(dummy_content.strip())
-        print(f"Created a dummy file '{dummy_file_name}' for testing.")
-
-        # Get file path from user, or use the dummy file for testing
-        file_path_input = input(f"Enter the path to your text file (e.g., '{dummy_file_name}'): ")
-        if not file_path_input: # If user just presses enter, use the dummy file
-            file_path_input = dummy_file_name
-
-        json_output = group_words_by_length(file_path_input)
+        json_output = group_words_by_length(args.file_path)
 
         if json_output:
             with open("words.json", "w", encoding="utf-8") as json_file:
@@ -75,8 +62,3 @@ if __name__ == "__main__":
 
     except Exception as e:
         print(f"An error occurred during script execution: {e}")
-    finally:
-        # Clean up the dummy file
-        if os.path.exists(dummy_file_name):
-            os.remove(dummy_file_name)
-            print(f"Cleaned up dummy file '{dummy_file_name}'.")

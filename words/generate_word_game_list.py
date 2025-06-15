@@ -1,27 +1,31 @@
 import json
 import requests
 import nltk
+import nltk.downloader
 from nltk.stem import WordNetLemmatizer
 from collections import defaultdict
 
 # Ensure NLTK data is downloaded.
 # Uncomment it to run it the first time.
 #
-# try:
-#     nltk.data.find('corpora/wordnet')
-# except nltk.downloader.DownloadError:
-#     print("Downloading NLTK 'wordnet' corpus...")
-#     nltk.download('wordnet')
-# try:
-#     nltk.data.find('corpora/omw-1.4')
-# except nltk.downloader.DownloadError:
-#     print("Downloading NLTK 'omw-1.4' corpus...")
-#     nltk.download('omw-1.4')
+
+nltk.download('wordnet')
+nltk.download('omw-1.4')
+nltk.download('words')
+nltk.download('averaged_perceptron_tagger_eng')
+
+def is_proper_noun(word):
+    # NLTK's pos_tag expects a list of tokens
+    tagged = nltk.pos_tag([word])
+    return tagged[0][1] in ("NNP", "NNPS")
+
+def is_english_word(word, english_vocab):
+    return word.lower() in english_vocab
 
 def generate_word_game_list(words_by_length_json_str: str, min_len: int = 5, max_len: int = 7) -> dict:
     """
     Generates a word game list by filtering words by length, lemmatizing them,
-    and sorting by frequency.
+    and sorting by frequency. Excludes proper nouns and foreign words.
 
     Args:
         words_by_length_json_str: A JSON string where keys are word lengths (str)
@@ -55,17 +59,14 @@ def generate_word_game_list(words_by_length_json_str: str, min_len: int = 5, max
                         count = int(parts[1])
                         word_frequencies[word] = count
                 except ValueError:
-                    # Skip lines that don't fit the expected 'count word' format
                     continue
     except requests.exceptions.RequestException as e:
         print(f"Error fetching word frequency list: {e}")
         return {}
 
-    # Initialize the lemmatizer
     lemmatizer = WordNetLemmatizer()
+    english_vocab = set(w.lower() for w in nltk.corpus.words.words())
 
-    # Dictionary to store lemmatized words, grouped by their final length,
-    # and then sorted by frequency.
     final_word_game_list = defaultdict(list)
     unique_lemmas_processed = set()  # To avoid duplicate lemmas globally
 
@@ -77,12 +78,17 @@ def generate_word_game_list(words_by_length_json_str: str, min_len: int = 5, max
 
         if 5 <= current_length <= 10:
             for word in words:
+                if is_proper_noun(word):
+                    continue
                 lemma_noun = lemmatizer.lemmatize(word.lower(), pos='n')
                 lemma_verb = lemmatizer.lemmatize(word.lower(), pos='v')
 
                 chosen_lemma = lemma_noun
                 if lemma_verb in word_frequencies and (lemma_noun not in word_frequencies or word_frequencies[lemma_verb] > word_frequencies[lemma_noun]):
                     chosen_lemma = lemma_verb
+
+                if not is_english_word(chosen_lemma, english_vocab):
+                    continue
 
                 freq = word_frequencies.get(chosen_lemma, 0)
                 lemma_length = len(chosen_lemma)
@@ -98,8 +104,6 @@ def generate_word_game_list(words_by_length_json_str: str, min_len: int = 5, max
         final_word_game_list[length].sort(key=lambda x: x[1], reverse=True)
         final_word_game_list[length] = [lemma for lemma, freq in final_word_game_list[length]]
 
-
-    # Convert defaultdict to regular dict for output consistency
     return dict(final_word_game_list)
 
 if __name__ == "__main__":
@@ -109,7 +113,9 @@ if __name__ == "__main__":
             processed_list = generate_word_game_list(input_json, min_len=5, max_len=7)
 
         if processed_list:
-            print(json.dumps(processed_list, indent=2, ensure_ascii=False))
+            with open("answers.json", "w", encoding="utf-8") as out_f:
+                out_f.write(json.dumps(processed_list, indent=2, ensure_ascii=False))
+            print("Processed word game list written to 'answers.json'.")
         else:
             print("\nCould not generate the word game list. Please check the input JSON and network connection.")
 
