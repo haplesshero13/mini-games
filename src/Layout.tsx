@@ -1,8 +1,6 @@
 import React, { useState } from "react";
 import { NavLink, Link } from "react-router-dom";
 import { Outlet } from "react-router-dom";
-// import { ReactComponent as GithubIcon } from "./assets/github-icon.svg";
-// import { ReactComponent as HamburgerIcon } from "./assets/hamburger-icon.svg";
 
 const HamburgerIcon = () => (
   <svg
@@ -21,6 +19,23 @@ const HamburgerIcon = () => (
   </svg>
 );
 
+const CloseIcon = () => (
+  <svg
+    className="w-8 h-8 text-gray-700"
+    fill="none"
+    stroke="currentColor"
+    viewBox="0 0 24 24"
+    xmlns="http://www.w3.org/2000/svg"
+  >
+    <path
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      strokeWidth={2}
+      d="M6 18L18 6M6 6l12 12"
+    />
+  </svg>
+);
+
 export const Layout: React.FC = () => {
   const [navOpen, setNavOpen] = useState(false);
 
@@ -29,58 +44,24 @@ export const Layout: React.FC = () => {
       <header className="w-full border-b flex items-center relative min-h-12 max-h-12 z-10">
         <button
           className="p-2 cursor-pointer"
-          aria-label="Open navigation"
+          aria-label={navOpen ? "Close navigation" : "Open navigation"}
           onClick={() => setNavOpen((v) => !v)}
         >
-          <HamburgerIcon />
+          {navOpen ? <CloseIcon /> : <HamburgerIcon />}
         </button>
-
         <Link
           to="/"
           className="sm:text-3xl font-bold leading-tight text-gray-900"
         >
           Nofair Games
         </Link>
-        <a
-          href="https://github.com/haplesshero13/mini-games/"
-          target="_blank"
-          rel="noopener noreferrer"
-          className="absolute hidden sm:block top-2 right-2 text-gray-400 hover:text-black transition-colors"
-          aria-label="View source on GitHub"
-        >
-          <img
-            src="https://github.githubassets.com/assets/GitHub-Mark-ea2971cee799.png"
-            alt="GitHub"
-            className="w-8 h-8"
-          />
-        </a>
       </header>
       <nav
-        className={`absolute top-12 w-2xs bg-white shadow-md z-20 transition-transform duration-300 ease-in-out transform
+        className={`fixed top-12 left-0 h-[calc(100vh-3rem)] w-64 bg-white shadow-md z-20 transition-transform duration-300 ease-in-out transform
           ${navOpen ? "translate-x-0 pointer-events-auto" : "-translate-x-full pointer-events-none"}
         `}
       >
-        <div className="flex flex-col gap-2 p-4">
-          <button
-            className="self-start mb-2 p-2 rounded hover:bg-gray-100 focus:outline-none"
-            aria-label="Close navigation"
-            onClick={() => setNavOpen(false)}
-          >
-            <svg
-              className="w-6 h-6 text-gray-700"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-              xmlns="http://www.w3.org/2000/svg"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M6 18L18 6M6 6l12 12"
-              />
-            </svg>
-          </button>
+        <div className="flex flex-col gap-2 p-4 h-full">
           {[5, 6, 7].map((n) => (
             <NavLink
               key={n}
@@ -107,6 +88,19 @@ export const Layout: React.FC = () => {
             WordUp With Gacha
           </NavLink>
         </div>
+        <a
+          href="https://github.com/haplesshero13/mini-games/"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="absolute flex flex-row bottom-2 right-2 text-gray-400 hover:text-black transition-colors"
+          aria-label="View source on GitHub"
+        >
+          <img
+            src="https://github.githubassets.com/assets/GitHub-Mark-ea2971cee799.png"
+            alt="GitHub"
+            className="w-12 h-12 display-inline-block"
+          />
+        </a>
       </nav>
       <main className="flex-1 flex flex-col items-center justify-center w-full bg-white">
         <Outlet />
