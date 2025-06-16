@@ -88,19 +88,6 @@ export const Layout: React.FC = () => {
             WordUp With Gacha
           </NavLink>
         </div>
-        <a
-          href="https://github.com/haplesshero13/mini-games/"
-          target="_blank"
-          rel="noopener noreferrer"
-          className="absolute flex flex-row bottom-2 right-2 text-gray-400 hover:text-black transition-colors"
-          aria-label="View source on GitHub"
-        >
-          <img
-            src="https://github.githubassets.com/assets/GitHub-Mark-ea2971cee799.png"
-            alt="GitHub"
-            className="w-12 h-12 display-inline-block"
-          />
-        </a>
       </nav>
       <main className="flex-1 flex flex-col items-center justify-center w-full bg-white">
         <Outlet />
@@ -119,7 +106,7 @@ export const Layout: React.FC = () => {
           href="https://github.com/haplesshero13/mini-games/"
           target="_blank"
           rel="noopener noreferrer"
-          className="underline hover:text-blue-600 sm:hidden p-2"
+          className="underline hover:text-blue-600 p-2"
         >
           View source on GitHub
         </a>
