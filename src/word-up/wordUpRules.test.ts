@@ -97,7 +97,7 @@ describe("isValidWord", () => {
         status: 404,
       },
     });
-    expect(await isValidWord("notaword")).toBe(false);
+    expect(await isValidWord("notaword", "answer")).toBe(false);
   });
 
   it("returns false when fetch throws", async () => {
@@ -105,10 +105,14 @@ describe("isValidWord", () => {
       throw: new Error("foobar"),
     });
 
-    expect(await isValidWord("error")).toBe(false);
+    expect(await isValidWord("error", "answer")).toBe(false);
   });
 
   it("returns false when 404", async () => {
-    expect(await isValidWord("404")).toBe(false);
+    expect(await isValidWord("404", "answer")).toBe(false);
+  });
+
+  it("returns true if the answer matches", async () => {
+    expect(await isValidWord("theanswer", "theanswer")).toBe(true);
   });
 });
