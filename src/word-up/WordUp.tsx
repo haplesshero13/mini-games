@@ -82,7 +82,7 @@ export const WordUp: React.FC<WordUpProps> = ({
       }
     }
     setLoading(true);
-    const valid = await isValidWord(input);
+    const valid = await isValidWord(input, answer);
     setLoading(false);
     if (!valid) {
       setError("Not a valid English word.");

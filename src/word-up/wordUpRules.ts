@@ -37,7 +37,9 @@ export const guessResults = (guess: string, answer: string): LetterStatus[] => {
   });
 };
 
-export const isValidWord = async (word: string): Promise<boolean> => {
+export const isValidWord = async (word: string, answer: string): Promise<boolean> => {
+  if (word === answer) return true;
+
   const url = `https://api.dictionaryapi.dev/api/v2/entries/en/${word}`;
 
   try {
