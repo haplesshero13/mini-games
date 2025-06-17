@@ -81,7 +81,7 @@ describe("isValidWord", () => {
     fetchMock("https://api.dictionaryapi.dev/api/v2/entries/en/realword", {
       response: { data: [{ word: "realword" }] },
     });
-    expect(await isValidWord("realword")).toBe(true);
+    expect(await isValidWord("realword", "answer")).toBe(true);
   });
 
   it("returns false when fetch returns not ok", async () => {
