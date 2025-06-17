@@ -4,20 +4,39 @@ import nltk
 import nltk.downloader
 from nltk.stem import WordNetLemmatizer
 from collections import defaultdict
+import geonamescache
 
+gc = geonamescache.GeonamesCache()
 # Ensure NLTK data is downloaded.
 # Uncomment it to run it the first time.
 #
+# nltk.download('wordnet')
+# nltk.download('omw-1.4')
+# nltk.download('words')
+# nltk.download('averaged_perceptron_tagger_eng')
+#
+# Prepare geonamescache place and country names (lowercase for matching)
+country_names = set([c['name'].lower() for c in gc.get_countries().values()])
+# Also add alternate country names if available
+for c in gc.get_countries().values():
+    if 'names' in c:
+        for alt in c['names']:
+            country_names.add(alt.lower())
 
-nltk.download('wordnet')
-nltk.download('omw-1.4')
-nltk.download('words')
-nltk.download('averaged_perceptron_tagger_eng')
+city_names = set([c['name'].lower() for c in gc.get_cities().values()])
+# Also add alternate city names if available
+for c in gc.get_cities().values():
+    if 'names' in c:
+        for alt in c['names']:
+            city_names.add(alt.lower())
 
 def is_proper_noun(word):
     # NLTK's pos_tag expects a list of tokens
     tagged = nltk.pos_tag([word])
-    return tagged[0][1] in ("NNP", "NNPS")
+    isProper = tagged[0][1] in ("NNP", "NNPS")
+    if isProper:
+      print(f"{word} is a proper noun.")
+    return isProper
 
 def is_english_word(word, english_vocab):
     return word.lower() in english_vocab
@@ -25,7 +44,7 @@ def is_english_word(word, english_vocab):
 def generate_word_game_list(words_by_length_json_str: str, min_len: int = 5, max_len: int = 7) -> dict:
     """
     Generates a word game list by filtering words by length, lemmatizing them,
-    and sorting by frequency. Excludes proper nouns and foreign words.
+    and sorting by frequency. Excludes proper nouns, foreign words, and place/country names.
 
     Args:
         words_by_length_json_str: A JSON string where keys are word lengths (str)
@@ -44,6 +63,17 @@ def generate_word_game_list(words_by_length_json_str: str, min_len: int = 5, max
     except json.JSONDecodeError as e:
         print(f"Error parsing input JSON: {e}")
         return {}
+
+    place_names = country_names
+
+    # For length 5, use wordle.txt entries
+    wordle_five_list = []
+    try:
+        with open("wordle.txt", "r", encoding="utf-8") as wordle_file:
+            wordle_five_list = [line.strip().lower() for line in wordle_file if len(line.strip()) == 5]
+    except Exception as e:
+        print(f"Error reading wordle.txt: {e}")
+        wordle_five_list = []
 
     frequency_list_url = "https://raw.githubusercontent.com/hermitdave/FrequencyWords/refs/heads/master/content/2018/en/en_50k.txt"
     word_frequencies = {}
@@ -70,6 +100,9 @@ def generate_word_game_list(words_by_length_json_str: str, min_len: int = 5, max
     final_word_game_list = defaultdict(list)
     unique_lemmas_processed = set()  # To avoid duplicate lemmas globally
 
+    final_word_game_list["5"] = wordle_five_list
+
+    # Only process 6 and 7 letter words algorithmically
     for length_str, words in words_by_length.items():
         try:
             current_length = int(length_str)
@@ -82,27 +115,32 @@ def generate_word_game_list(words_by_length_json_str: str, min_len: int = 5, max
                     continue
                 lemma_noun = lemmatizer.lemmatize(word.lower(), pos='n')
                 lemma_verb = lemmatizer.lemmatize(word.lower(), pos='v')
+                lemma_adj = lemmatizer.lemmatize(word.lower(), pos='a')
+                lemma_adv = lemmatizer.lemmatize(word.lower(), pos='r')
 
-                chosen_lemma = lemma_noun
-                if lemma_verb in word_frequencies and (lemma_noun not in word_frequencies or word_frequencies[lemma_verb] > word_frequencies[lemma_noun]):
-                    chosen_lemma = lemma_verb
+                # Choose the shortest lemma among noun, verb, adjective, adverb
+                lemmas = [lemma_noun, lemma_verb, lemma_adj, lemma_adv]
+                chosen_lemma = min(lemmas, key=len)
 
-                if not is_english_word(chosen_lemma, english_vocab):
+                # Filter out place/country/nonenglish names
+                if chosen_lemma in place_names or chosen_lemma in city_names or not is_english_word(chosen_lemma, english_vocab):
                     continue
 
                 freq = word_frequencies.get(chosen_lemma, 0)
                 lemma_length = len(chosen_lemma)
                 if (
-                    min_len <= lemma_length <= max_len
+                    6 <= lemma_length <= 7
                     and chosen_lemma not in unique_lemmas_processed
                     and freq >= 800
                 ):
                     final_word_game_list[str(lemma_length)].append((chosen_lemma, freq))
                     unique_lemmas_processed.add(chosen_lemma)
 
-    for length in final_word_game_list:
-        final_word_game_list[length].sort(key=lambda x: x[1], reverse=True)
-        final_word_game_list[length] = [lemma for lemma, freq in final_word_game_list[length]]
+    # Sort 6 and 7 letter lists by frequency
+    for length in ["6", "7"]:
+        if length in final_word_game_list:
+            final_word_game_list[length].sort(key=lambda x: x[1], reverse=True)
+            final_word_game_list[length] = [lemma for lemma, freq in final_word_game_list[length]]
 
     return dict(final_word_game_list)
 

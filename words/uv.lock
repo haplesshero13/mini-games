@@ -55,6 +55,15 @@ wheels = [
 ]
 
 [[package]]
+name = "geonamescache"
+version = "2.0.0"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/3c/5a/2794a754c6e1f8c2a5699883958e410856f3976e18709a1f9b6f5144e484/geonamescache-2.0.0.tar.gz", hash = "sha256:fa1eed0b5b591b478ad81979081ac15b37aa6a1c00bb02431a570688e5c2ecc9", size = 25565852, upload-time = "2023-07-03T21:40:33.107Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/2e/8a/6555e3c3ed1fcadf229dcfb41b92d51eb0c7623d42290e1d6925ac383b33/geonamescache-2.0.0-py3-none-any.whl", hash = "sha256:24fdaaeaf236f88786dec8c0ab55447f5f7f95ef6c094e79fa9ef74114ea1fe2", size = 26622351, upload-time = "2023-07-03T21:34:43.994Z" },
+]
+
+[[package]]
 name = "idna"
 version = "3.10"
 source = { registry = "https://pypi.org/simple" }
@@ -151,12 +160,14 @@ name = "words"
 version = "0.1.0"
 source = { virtual = "." }
 dependencies = [
+    { name = "geonamescache" },
     { name = "nltk" },
     { name = "requests" },
 ]
 
 [package.metadata]
 requires-dist = [
+    { name = "geonamescache", specifier = ">=2.0.0" },
     { name = "nltk", specifier = ">=3.9.1" },
     { name = "requests", specifier = ">=2.32.3" },
 ]
